@@ -3479,7 +3479,19 @@ EFIAPI
 CpuDeadLoop (
   VOID
   );
- 
+
+
+/**
+  A function which does nothing.
+
+  A debugger may use this function to stop and perform some actions.
+**/
+VOID
+EFIAPI
+CpuDoNothing (
+  VOID
+  );
+
 #if defined (MDE_CPU_IPF)
 
 /**

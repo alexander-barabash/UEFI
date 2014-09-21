@@ -54,6 +54,7 @@ COMPONENT_TYPE  = LIBRARY
   ARShiftU64.c
   BitField.c
   CpuDeadLoop.c
+  CpuDoNothing.c
   Cpu.c
   LinkedList.c
   String.c
