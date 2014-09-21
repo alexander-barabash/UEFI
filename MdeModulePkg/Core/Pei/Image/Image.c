@@ -663,6 +663,8 @@ PeiLoadImageLoadImage (
       DEBUG ((EFI_D_INFO | EFI_D_LOAD, "%a", EfiFileName));
     }
 
+    CpuDoNothing ();
+
   DEBUG_CODE_END ();
 
   DEBUG ((EFI_D_INFO | EFI_D_LOAD, "\n"));

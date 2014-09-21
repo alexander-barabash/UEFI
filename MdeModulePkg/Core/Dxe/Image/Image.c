@@ -774,6 +774,8 @@ CoreLoadPeImage (
     }
     DEBUG ((DEBUG_INFO | DEBUG_LOAD, "\n"));
 
+    CpuDoNothing ();
+
   DEBUG_CODE_END ();
 
   return EFI_SUCCESS;
