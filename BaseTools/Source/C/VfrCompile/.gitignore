@@ -1,0 +1,9 @@
+EfiVfrParser.cpp
+EfiVfrParser.h
+VfrLexer.cpp
+VfrLexer.h
+VfrParser.dlg
+VfrSyntax.cpp
+VfrTokens.h
+Pccts/antlr/antlr
+Pccts/dlg/dlg
