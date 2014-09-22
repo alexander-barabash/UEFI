@@ -408,14 +408,6 @@ SataControllerSupported (
                         sizeof (PciData.Hdr.ClassCode),
                         PciData.Hdr.ClassCode
                         );
-
-  gBS->CloseProtocol (
-          Controller,
-          &gEfiPciIoProtocolGuid,
-          This->DriverBindingHandle,
-          Controller
-          );
-
   if (EFI_ERROR (Status)) {
     return EFI_UNSUPPORTED;
   }
@@ -463,14 +455,13 @@ SataControllerStart (
   //
   // Now test and open PCI I/O Protocol
   //
-
   Status = gBS->OpenProtocol (
                   Controller,
                   &gEfiPciIoProtocolGuid,
                   (VOID **) &PciIo,
                   This->DriverBindingHandle,
                   Controller,
-                  EFI_OPEN_PROTOCOL_GET_PROTOCOL // EFI_OPEN_PROTOCOL_BY_DRIVER
+                  EFI_OPEN_PROTOCOL_BY_DRIVER
                   );
   if (EFI_ERROR (Status)) {
     DEBUG ((EFI_D_ERROR, "SataControllerStart error return status = %r\n", Status));
@@ -554,14 +545,14 @@ SataControllerStart (
                   );
 
 Done:
-  gBS->CloseProtocol (
+  if (EFI_ERROR (Status)) {
+
+    gBS->CloseProtocol (
           Controller,
           &gEfiPciIoProtocolGuid,
           This->DriverBindingHandle,
           Controller
           );
-
-  if (EFI_ERROR (Status)) {
     if (SataPrivateData != NULL) {
       if (SataPrivateData->DisqulifiedModes != NULL) {
         FreePool (SataPrivateData->DisqulifiedModes);
@@ -650,8 +641,6 @@ SataControllerStop (
     FreePool (SataPrivateData);
   }
 
-  return EFI_SUCCESS;
-#if 0
   //
   // Close protocols opened by Sata Controller driver
   //
@@ -661,7 +650,6 @@ SataControllerStop (
                 This->DriverBindingHandle,
                 Controller
                 );
-#endif
 }
 
 //
