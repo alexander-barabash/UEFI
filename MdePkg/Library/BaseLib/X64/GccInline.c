@@ -103,7 +103,9 @@ CpuBreakpoint (
   VOID
   )
 {
+#if 0
   __asm__ __volatile__ ("int $3");
+#endif
 }
 
 
