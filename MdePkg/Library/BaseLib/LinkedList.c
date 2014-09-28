@@ -77,7 +77,12 @@ InternalBaseLibIsNodeInList (
         //
         // ASSERT() if the linked list is too long
         //
+#if 0
         ASSERT (Count < PcdGet32 (PcdMaximumLinkedListLength));
+#else
+        if (Count >= PcdGet32 (PcdMaximumLinkedListLength))
+            DEBUG((EFI_D_ERROR,"WARNING: Linked list is too long.\n"));
+#endif
 
         //
         // Return if the linked list is too long
@@ -106,7 +111,12 @@ InternalBaseLibIsNodeInList (
     //
     // ASSERT() if the linked list is too long
     //
+#if 0
     ASSERT (Count < PcdGet32 (PcdMaximumLinkedListLength));
+#else
+    if (Count >= PcdGet32 (PcdMaximumLinkedListLength))
+        DEBUG((EFI_D_ERROR,"WARNING: Linked list is too long.\n"));
+#endif
   }
 
   return TRUE;
