@@ -1,3 +1,4 @@
+/* -*- mode: c++; c-basic-offset: 2; -*- */
 /** @file
   ACPI Timer implements one instance of Timer Library.
 
@@ -25,6 +26,29 @@
 #include <IndustryStandard/Acpi.h>
 
 //
+// PCI Location of ICH9 LPC bridge
+//
+#define ICH9_LPC_BRIDGE_BUS      0x00
+#define ICH9_LPC_BRIDGE_DEVICE   0x1f
+#define ICH9_LPC_BRIDGE_FUNCTION 0x00
+
+//
+// Macro to access ICH9 LPC bridge PCI Configuration Registers
+//
+#define ICH9_LPC_BRIDGE_PCI_REGISTER(Register)        \
+  PCI_LIB_ADDRESS (ICH9_LPC_BRIDGE_BUS,               \
+                   ICH9_LPC_BRIDGE_DEVICE,            \
+                   ICH9_LPC_BRIDGE_FUNCTION,          \
+                   Register)
+
+//
+// ICH9 LPC bridge PCI Configuration Registers
+//
+#define ICH9_LPC_PMBASE                     ICH9_LPC_BRIDGE_PCI_REGISTER (0x40)
+#define   ICH9_LPC_PMBASE_RTE               0x0001
+#define   ICH9_LPC_PMBASE_BASE_ADDRESS_MASK 0xFF80
+
+//
 // PCI Location of PIIX4 Power Management PCI Configuration Registers
 //
 #define PIIX4_POWER_MANAGEMENT_BUS       0x00
@@ -43,75 +67,20 @@
     )
 
 //
-// PCI Location of Q35 Power Management PCI Configuration Registers
+// PIIX4 Power Management PCI Configuration Registers
 //
-#define Q35_POWER_MANAGEMENT_BUS       0x00
-#define Q35_POWER_MANAGEMENT_DEVICE    0x1f
-#define Q35_POWER_MANAGEMENT_FUNCTION  0x00
-
-//
-// Macro to access Q35 Power Management PCI Configuration Registers
-//
-#define Q35_PCI_POWER_MANAGEMENT_REGISTER(Register) \
-  PCI_LIB_ADDRESS (                                 \
-    Q35_POWER_MANAGEMENT_BUS,                       \
-    Q35_POWER_MANAGEMENT_DEVICE,                    \
-    Q35_POWER_MANAGEMENT_FUNCTION,                  \
-    Register                                        \
-    )
-
-//
-// PCI Location of Host Bridge PCI Configuration Registers
-//
-#define HOST_BRIDGE_BUS       0x00
-#define HOST_BRIDGE_DEVICE    0x00
-#define HOST_BRIDGE_FUNCTION  0x00
-
-//
-// Macro to access Host Bridge Configuration Registers
-//
-#define HOST_BRIDGE_REGISTER(Register) \
-  PCI_LIB_ADDRESS (                    \
-    HOST_BRIDGE_BUS,                   \
-    HOST_BRIDGE_DEVICE,                \
-    HOST_BRIDGE_FUNCTION,              \
-    Register                           \
-    )
-
-//
-// Host Bridge Device ID (DID) Register
-//
-#define HOST_BRIDGE_DID  HOST_BRIDGE_REGISTER (0x02)
-
-//
-// Host Bridge DID Register values
-//
-#define PCI_DEVICE_ID_INTEL_82441    0x1237  // DID value for PIIX4
-#define PCI_DEVICE_ID_INTEL_Q35_MCH  0x29C0  // DID value for Q35
-
-//
-// Access Power Management PCI Config Regs based on Host Bridge type
-//
-#define PCI_POWER_MANAGEMENT_REGISTER(Register)                   \
-  ((PciRead16 (HOST_BRIDGE_DID) == PCI_DEVICE_ID_INTEL_Q35_MCH) ? \
-    Q35_PCI_POWER_MANAGEMENT_REGISTER (Register) :                \
-    PIIX4_PCI_POWER_MANAGEMENT_REGISTER (Register))
-
-//
-// Power Management PCI Configuration Registers
-//
-#define PMBA                PCI_POWER_MANAGEMENT_REGISTER (0x40)
+#define PMBA                PIIX4_PCI_POWER_MANAGEMENT_REGISTER (0x40)
 #define   PMBA_RTE          BIT0
-#define PMREGMISC           PCI_POWER_MANAGEMENT_REGISTER (0x80)
+#define PMREGMISC           PIIX4_PCI_POWER_MANAGEMENT_REGISTER (0x80)
 #define   PMIOSE            BIT0
 
 //
-// The ACPI Time is a 24-bit counter
+// The ACPI Time in the PIIX4 and ICH9 (Q35) is a 24-bit counter
 //
 #define ACPI_TIMER_COUNT_SIZE  BIT24
 
 //
-// Offset in the Power Management Base Address to the ACPI Timer
+// Offset in the PIIX4 and ICH9 (Q35) Power Management Base Address to the ACPI Timer 
 //
 #define ACPI_TIMER_OFFSET      0x8
 
@@ -130,20 +99,37 @@ AcpiTimerLibConstructor (
   VOID
   )
 {
-  //
-  // Check to see if the Power Management Base Address is already enabled
-  //
-  if ((PciRead8 (PMREGMISC) & PMIOSE) == 0) {
-    //
-    // If the Power Management Base Address is not programmed,
-    // then program the Power Management Base Address from a PCD.
-    //
-    PciAndThenOr32 (PMBA, (UINT32)(~0x0000FFC0), PcdGet16 (PcdAcpiPmBaseAddress));
+  UINT8 pmregmisc_value;
+  UINT32 ich9_lpc_pmbase_value;
 
+  pmregmisc_value = PciRead8 (PMREGMISC);
+
+  if (pmregmisc_value == 0xFF) {
     //
-    // Enable PMBA I/O port decodes in PMREGMISC
+    // Check to see if the ICH9 LPC bridge Power Management Base is already enabled
     //
-    PciOr8 (PMREGMISC, PMIOSE);
+    ich9_lpc_pmbase_value = PciRead32 (ICH9_LPC_PMBASE);
+    if ((ich9_lpc_pmbase_value & ICH9_LPC_PMBASE_BASE_ADDRESS_MASK) == 0) {
+      PciWrite32 (ICH9_LPC_PMBASE,
+                  (ich9_lpc_pmbase_value & (UINT32)(~ICH9_LPC_PMBASE_BASE_ADDRESS_MASK)) |
+                  PcdGet16 (PcdAcpiPmBaseAddress));
+    }
+  } else {
+    //
+    // Check to see if the PIIX4 Power Management Base Address is already enabled
+    //
+    if ((pmregmisc_value & PMIOSE) == 0) {
+      //
+      // If the PIIX4 Power Management Base Address is not programmed, 
+      // then program the PIIX4 Power Management Base Address from a PCD.
+      //
+      PciAndThenOr32 (PMBA, (UINT32)(~0x0000FFC0), PcdGet16 (PcdAcpiPmBaseAddress));
+      
+      //
+      // Enable PMBA I/O port decodes in PMREGMISC
+      //
+      PciOr8 (PMREGMISC, PMIOSE);
+    }
   }
   
   return RETURN_SUCCESS;
@@ -162,10 +148,20 @@ InternalAcpiGetTimerTick (
   VOID
   )
 {
+  UINT8 pmregmisc_value;
+  UINT32 portPMBA;
+
+  pmregmisc_value = PciRead8 (PMREGMISC);
+
   //
   //   Read PMBA to read and return the current ACPI timer value.
   //
-  return IoRead32 ((PciRead32 (PMBA) & ~PMBA_RTE) + ACPI_TIMER_OFFSET);
+  if (pmregmisc_value == 0xFF) {
+    portPMBA = (PciRead32 (ICH9_LPC_PMBASE) & ICH9_LPC_PMBASE_BASE_ADDRESS_MASK) + ACPI_TIMER_OFFSET;
+  } else {
+    portPMBA = (PciRead32 (PMBA) & ~PMBA_RTE) + ACPI_TIMER_OFFSET;
+  }
+  return IoRead32 (portPMBA);
 }
 
 /**
