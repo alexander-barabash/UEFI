@@ -263,6 +263,7 @@ TriggerSoftInterrupt (
   IN UINT32                 Signature
   )
 {
+#if 0
   UINTN                  Dr0;
   UINTN                  Dr1;
 
@@ -289,7 +290,9 @@ TriggerSoftInterrupt (
   //
   AsmWriteDr0 (Dr0);
   AsmWriteDr1 (Dr1);
-
+#else
+  CpuDoNothing();
+#endif
 }
 
 /**
