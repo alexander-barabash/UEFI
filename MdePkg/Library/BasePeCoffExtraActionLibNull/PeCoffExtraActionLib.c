@@ -16,6 +16,14 @@
 #include <Library/PeCoffExtraActionLib.h>
 #include <Library/DebugLib.h>
 
+VOID
+PeCoffLoaderRelocateImageExtraActionBreakpoint (
+  IN OUT PE_COFF_LOADER_IMAGE_CONTEXT  *ImageContext
+  )
+{
+    ASSERT (ImageContext != NULL);
+}
+
 /**
   Performs additional actions after a PE/COFF image has been loaded and relocated.
 
@@ -32,6 +40,22 @@ PeCoffLoaderRelocateImageExtraAction (
   )
 {
   ASSERT (ImageContext != NULL);
+
+  DEBUG_CODE_BEGIN ();
+  if (ImageContext != NULL) {
+    if (ImageContext->PdbPointer != NULL) {
+        DEBUG ((DEBUG_INFO | DEBUG_LOAD,
+                "Loading image at 0x%11p PDB = %a\n",
+                (VOID *)(UINTN) ImageContext->ImageAddress,
+                ImageContext->PdbPointer));
+    } else {
+        DEBUG ((DEBUG_INFO | DEBUG_LOAD,
+                "Loading unknown image at 0x%11p\n",
+                (VOID *)(UINTN) ImageContext->ImageAddress));
+    }
+    PeCoffLoaderRelocateImageExtraActionBreakpoint (ImageContext);
+  }
+  DEBUG_CODE_END ();
 }  
 
 /**
