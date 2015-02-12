@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 #
 # Copyright (c) 2008 - 2009, Apple Inc. All rights reserved.<BR>
 # Copyright (c) 2010 - 2014, Intel Corporation. All rights reserved.<BR>
@@ -41,8 +41,14 @@ fi
 # Configure defaults for various options
 #
 
-ARCH_IA32=no
-ARCH_X64=no
+if [ "$ARCH_IA32" = "" ]
+then
+    ARCH_IA32=no
+fi
+if [ "$ARCH_X64" = "" ]
+then
+    ARCH_X64=no
+fi
 BUILDTARGET=DEBUG
 BUILD_OPTIONS=
 PLATFORMFILE=
