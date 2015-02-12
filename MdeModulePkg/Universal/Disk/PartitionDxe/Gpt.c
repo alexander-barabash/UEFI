@@ -219,6 +219,8 @@ PartitionInstallGptChildHandles (
   HARDDRIVE_DEVICE_PATH       HdDev;
   UINT32                      MediaId;
 
+  DEBUG ((EFI_D_ERROR, " =============== PartitionInstallGptChildHandles ============= \n"));
+
   ProtectiveMbr = NULL;
   PrimaryHeader = NULL;
   BackupHeader  = NULL;
@@ -229,8 +231,8 @@ PartitionInstallGptChildHandles (
   LastBlock     = BlockIo->Media->LastBlock;
   MediaId       = BlockIo->Media->MediaId;
 
-  DEBUG ((EFI_D_INFO, " BlockSize : %d \n", BlockSize));
-  DEBUG ((EFI_D_INFO, " LastBlock : %lx \n", LastBlock));
+  DEBUG ((EFI_D_INFO, " BlockSize : 0x%x \n", BlockSize));
+  DEBUG ((EFI_D_INFO, " LastBlock : 0x%lx \n", LastBlock));
 
   GptValidStatus = EFI_NOT_FOUND;
 
@@ -242,6 +244,7 @@ PartitionInstallGptChildHandles (
     return EFI_NOT_FOUND;
   }
 
+  DEBUG ((EFI_D_ERROR, " Reading Protective MBR \n"));
   //
   // Read the Protective MBR from LBA #0
   //
@@ -254,6 +257,7 @@ PartitionInstallGptChildHandles (
                      );
   if (EFI_ERROR (Status)) {
     GptValidStatus = Status;
+    DEBUG ((EFI_D_ERROR, " Partition Entry Protective MBR ReadDisk error\n"));
     goto Done;
   }
 
@@ -261,14 +265,52 @@ PartitionInstallGptChildHandles (
   // Verify that the Protective MBR is valid
   //
   for (Index = 0; Index < MAX_MBR_PARTITIONS; Index++) {
+      DEBUG ((EFI_D_ERROR, "  MBR_PARTITION_RECORD: \n"
+              "    BootIndicator = 0x%x\n"
+              "    StartHead = 0x%x\n"
+              "    StartSector = 0x%x\n"
+              "    StartTrack = 0x%x\n"
+              "    OSIndicator = 0x%x\n"
+              "    EndHead = 0x%x\n"
+              "    EndSector = 0x%x\n"
+              "    EndTrack = 0x%x\n"
+              "    StartingLBA = 0x%x\n"
+              "    SizeInLBA = 0x%x\n",
+              ProtectiveMbr->Partition[Index].BootIndicator,
+              ProtectiveMbr->Partition[Index].StartHead,
+              ProtectiveMbr->Partition[Index].StartSector,
+              ProtectiveMbr->Partition[Index].StartTrack,
+              ProtectiveMbr->Partition[Index].OSIndicator,
+              ProtectiveMbr->Partition[Index].EndHead,
+              ProtectiveMbr->Partition[Index].EndSector,
+              ProtectiveMbr->Partition[Index].EndTrack,
+              UNPACK_UINT32(ProtectiveMbr->Partition[Index].StartingLBA),
+              UNPACK_UINT32(ProtectiveMbr->Partition[Index].SizeInLBA)));
+
     if (ProtectiveMbr->Partition[Index].BootIndicator == 0x00 &&
         ProtectiveMbr->Partition[Index].OSIndicator == PMBR_GPT_PARTITION &&
         UNPACK_UINT32 (ProtectiveMbr->Partition[Index].StartingLBA) == 1
         ) {
+      DEBUG ((EFI_D_ERROR, " Found Protective MBR BootIndicator == 0 OSIndicator == 0x%x StartingLBA == 1.\n"));
       break;
+    } else {
+        DEBUG ((EFI_D_ERROR, " Index %d: ", (UINT32)Index));
+        if (ProtectiveMbr->Partition[Index].BootIndicator != 0x00) {
+            DEBUG ((EFI_D_ERROR, " BootIndicator == 0x%x not zero.", (UINT32)ProtectiveMbr->Partition[Index].BootIndicator));
+        }
+        if (ProtectiveMbr->Partition[Index].OSIndicator != PMBR_GPT_PARTITION) {
+            DEBUG ((EFI_D_ERROR, " OSIndicator == 0x%x not 0x%x.",
+                    ProtectiveMbr->Partition[Index].OSIndicator, PMBR_GPT_PARTITION));
+        }
+        if (UNPACK_UINT32 (ProtectiveMbr->Partition[Index].StartingLBA) != 1) {
+            DEBUG ((EFI_D_ERROR, " StartingLBA == 0x%x not 1.",
+                    UNPACK_UINT32 (ProtectiveMbr->Partition[Index].StartingLBA)));
+        }
+        DEBUG ((EFI_D_ERROR, "\n"));
     }
   }
   if (Index == MAX_MBR_PARTITIONS) {
+    DEBUG ((EFI_D_ERROR, " Reached MAX_MBR_PARTITIONS %d\n", MAX_MBR_PARTITIONS));
     goto Done;
   }
 
@@ -277,11 +319,13 @@ PartitionInstallGptChildHandles (
   //
   PrimaryHeader = AllocateZeroPool (sizeof (EFI_PARTITION_TABLE_HEADER));
   if (PrimaryHeader == NULL) {
+    DEBUG ((EFI_D_ERROR, " PrimaryHeader == NULL\n"));
     goto Done;
   }
 
   BackupHeader = AllocateZeroPool (sizeof (EFI_PARTITION_TABLE_HEADER));
   if (BackupHeader == NULL) {
+    DEBUG ((EFI_D_ERROR, " BackupHeader == NULL\n"));
     goto Done;
   }
 
@@ -392,11 +436,11 @@ PartitionInstallGptChildHandles (
     CopyMem (HdDev.Signature, &Entry->UniquePartitionGUID, sizeof (EFI_GUID));
 
     DEBUG ((EFI_D_INFO, " Index : %d\n", (UINT32) Index));
-    DEBUG ((EFI_D_INFO, " Start LBA : %lx\n", (UINT64) HdDev.PartitionStart));
-    DEBUG ((EFI_D_INFO, " End LBA : %lx\n", (UINT64) Entry->EndingLBA));
-    DEBUG ((EFI_D_INFO, " Partition size: %lx\n", (UINT64) HdDev.PartitionSize));
-    DEBUG ((EFI_D_INFO, " Start : %lx", MultU64x32 (Entry->StartingLBA, BlockSize)));
-    DEBUG ((EFI_D_INFO, " End : %lx\n", MultU64x32 (Entry->EndingLBA, BlockSize)));
+    DEBUG ((EFI_D_INFO, " Start LBA : 0x%lx\n", (UINT64) HdDev.PartitionStart));
+    DEBUG ((EFI_D_INFO, " End LBA : 0x%lx\n", (UINT64) Entry->EndingLBA));
+    DEBUG ((EFI_D_INFO, " Partition size: 0x%lx\n", (UINT64) HdDev.PartitionSize));
+    DEBUG ((EFI_D_INFO, " Start : 0x%lx", MultU64x32 (Entry->StartingLBA, BlockSize)));
+    DEBUG ((EFI_D_INFO, " End : 0x%lx\n", MultU64x32 (Entry->EndingLBA, BlockSize)));
 
     Status = PartitionInstallChildHandle (
                This,
@@ -433,6 +477,7 @@ Done:
     FreePool (PEntryStatus);
   }
 
+  DEBUG ((EFI_D_ERROR, " =============== PartitionInstallGptChildHandles returns %d ============= \n", (UINT32)GptValidStatus));
   return GptValidStatus;
 }
 

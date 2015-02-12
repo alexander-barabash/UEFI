@@ -993,11 +993,15 @@ ScsiExecuteSCSICommand (
                                           ExtRequestPacket,
                                           Event
                                           );
+    if (EFI_ERROR(Status)) {
+        DEBUG ((EFI_D_ERROR, "ScsiExecuteSCSICommand: ScsiIoDevice->ExtScsiPassThru->PassThru error\n"));
+    }
   } else {
 
     mWorkingBuffer = AllocatePool (sizeof(EFI_SCSI_PASS_THRU_SCSI_REQUEST_PACKET));
 
     if (mWorkingBuffer == NULL) {
+        DEBUG ((EFI_D_ERROR, "ScsiExecuteSCSICommand: could not allocate mWorkingBuffer of size %d\n", (UINT32)sizeof(EFI_SCSI_PASS_THRU_SCSI_REQUEST_PACKET)));
       return EFI_DEVICE_ERROR;
     }
 
@@ -1007,6 +1011,7 @@ ScsiExecuteSCSICommand (
     Status = ScsiioToPassThruPacket(Packet, (EFI_SCSI_PASS_THRU_SCSI_REQUEST_PACKET*)mWorkingBuffer);
     if (EFI_ERROR(Status)) {
       FreePool(mWorkingBuffer);
+      DEBUG ((EFI_D_ERROR, "ScsiExecuteSCSICommand: ScsiioToPassThruPacket error\n"));
       return Status;
     }
 
@@ -1025,6 +1030,7 @@ ScsiExecuteSCSICommand (
                        );
       if (EFI_ERROR(Status)) {
         FreePool(mWorkingBuffer);
+        DEBUG ((EFI_D_ERROR, "ScsiExecuteSCSICommand: CreateEvent error\n"));
         return Status;
       }
 
@@ -1039,6 +1045,7 @@ ScsiExecuteSCSICommand (
       if (EFI_ERROR(Status)) {
         FreePool(mWorkingBuffer);
         gBS->CloseEvent(PacketEvent);
+        DEBUG ((EFI_D_ERROR, "ScsiExecuteSCSICommand: ScsiIoDevice->ScsiPassThru->PassThru error\n"));
         return Status;
       }
 
@@ -1056,6 +1063,7 @@ ScsiExecuteSCSICommand (
                                           );
       if (EFI_ERROR(Status)) {
         FreePool(mWorkingBuffer);
+        DEBUG ((EFI_D_ERROR, "ScsiExecuteSCSICommand: ScsiIoDevice->ScsiPassThru->PassThru error 2\n"));
         return Status;
       }
 

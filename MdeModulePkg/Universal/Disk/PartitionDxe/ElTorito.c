@@ -66,16 +66,22 @@ PartitionInstallElToritoChildHandles (
 
   VolSpaceSize  = 0;
 
+  DEBUG ((EFI_D_ERROR, " =============== PartitionInstallElToritoChildHandles ============= \n"));
+
   //
   // CD_ROM has the fixed block size as 2048 bytes
   //
   if (Media->BlockSize != 2048) {
+      DEBUG ((EFI_D_ERROR, " Media->BlockSize is %d not 2048\n", (UINT32)Media->BlockSize));
+      DEBUG ((EFI_D_ERROR, " =============== PartitionInstallElToritoChildHandles returns EFI_NOT_FOUND\n"));
     return EFI_NOT_FOUND;
   }
 
   VolDescriptor = AllocatePool ((UINTN) Media->BlockSize);
 
   if (VolDescriptor == NULL) {
+      DEBUG ((EFI_D_ERROR, " VolDescriptor == NULL\n"));
+      DEBUG ((EFI_D_ERROR, " =============== PartitionInstallElToritoChildHandles returns EFI_NOT_FOUND\n"));
     return EFI_NOT_FOUND;
   }
 
@@ -110,6 +116,8 @@ PartitionInstallElToritoChildHandles (
                        VolDescriptor
                        );
     if (EFI_ERROR (Status)) {
+      DEBUG ((EFI_D_ERROR, " Read disk error\n"));
+      DEBUG ((EFI_D_ERROR, " =============== PartitionInstallElToritoChildHandles returns %d\n", (UINT32)Status));
       Found = Status;
       break;
     }
@@ -122,6 +130,8 @@ PartitionInstallElToritoChildHandles (
       //
       // end of Volume descriptor list
       //
+      DEBUG ((EFI_D_ERROR, " End of Volume descriptor list\n"));
+      DEBUG ((EFI_D_ERROR, " =============== PartitionInstallElToritoChildHandles returns %d\n", (UINT32)Found));
       break;
     }
     //
@@ -278,5 +288,6 @@ PartitionInstallElToritoChildHandles (
 
   FreePool (VolDescriptor);
 
+  DEBUG ((EFI_D_ERROR, " =============== PartitionInstallElToritoChildHandles returns %d\n", (UINT32)Found));
   return Found;
 }

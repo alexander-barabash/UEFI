@@ -3244,6 +3244,7 @@ BdsLibEnumerateAllBootOption (
         } else {
           UnicodeSPrint (Buffer, sizeof (Buffer), L"%s", BdsLibGetStringById (STRING_TOKEN (STR_DESCRIPTION_FLOPPY)));
         }
+        DEBUG ((DEBUG_INFO | DEBUG_LOAD, "Floppy Buffer: %S\n", Buffer));
         BdsLibBuildOptionFromHandle (BlockIoHandles[Index], BdsBootOptionList, Buffer);
         FloppyNumber++;
         break;
@@ -3253,7 +3254,9 @@ BdsLibEnumerateAllBootOption (
       //
       case BDS_EFI_MESSAGE_ATAPI_BOOT:
       case BDS_EFI_MESSAGE_SATA_BOOT:
+          DEBUG ((DEBUG_INFO | DEBUG_LOAD, "BdsLibEnumerateAllBootOption: %S\n", DevicePathType == BDS_EFI_MESSAGE_ATAPI_BOOT ? L"BDS_EFI_MESSAGE_ATAPI_BOOT" : L"BDS_EFI_MESSAGE_SATA_BOOT"));
         if (BlkIo->Media->RemovableMedia) {
+            DEBUG ((DEBUG_INFO | DEBUG_LOAD, "BdsLibEnumerateAllBootOption RemovableMedia CdromNumber=%d\n", CdromNumber));
           if (CdromNumber != 0) {
             UnicodeSPrint (Buffer, sizeof (Buffer), L"%s %d", BdsLibGetStringById (STRING_TOKEN (STR_DESCRIPTION_CD_DVD)), CdromNumber);
           } else {
@@ -3261,6 +3264,7 @@ BdsLibEnumerateAllBootOption (
           }
           CdromNumber++;
         } else {
+            DEBUG ((DEBUG_INFO | DEBUG_LOAD, "BdsLibEnumerateAllBootOption Hard Drive HarddriveNumber=%d\n", HarddriveNumber));
           if (HarddriveNumber != 0) {
             UnicodeSPrint (Buffer, sizeof (Buffer), L"%s %d", BdsLibGetStringById (STRING_TOKEN (STR_DESCRIPTION_HARDDRIVE)), HarddriveNumber);
           } else {
@@ -3268,7 +3272,7 @@ BdsLibEnumerateAllBootOption (
           }
           HarddriveNumber++;
         }
-        DEBUG ((DEBUG_INFO | DEBUG_LOAD, "Buffer: %S\n", Buffer));
+        DEBUG ((DEBUG_INFO | DEBUG_LOAD, "ATAPI/SATA Buffer: %S\n", Buffer));
         BdsLibBuildOptionFromHandle (BlockIoHandles[Index], BdsBootOptionList, Buffer);
         break;
 
@@ -3278,6 +3282,7 @@ BdsLibEnumerateAllBootOption (
         } else {
           UnicodeSPrint (Buffer, sizeof (Buffer), L"%s", BdsLibGetStringById (STRING_TOKEN (STR_DESCRIPTION_USB)));
         }
+        DEBUG ((DEBUG_INFO | DEBUG_LOAD, "USB DEVICE Buffer: %S\n", Buffer));
         BdsLibBuildOptionFromHandle (BlockIoHandles[Index], BdsBootOptionList, Buffer);
         UsbNumber++;
         break;
@@ -3288,6 +3293,7 @@ BdsLibEnumerateAllBootOption (
         } else {
           UnicodeSPrint (Buffer, sizeof (Buffer), L"%s", BdsLibGetStringById (STRING_TOKEN (STR_DESCRIPTION_SCSI)));
         }
+        DEBUG ((DEBUG_INFO | DEBUG_LOAD, "SCSI ROOT Buffer: %S\n", Buffer));
         BdsLibBuildOptionFromHandle (BlockIoHandles[Index], BdsBootOptionList, Buffer);
         ScsiNumber++;
         break;
@@ -3299,6 +3305,7 @@ BdsLibEnumerateAllBootOption (
         } else {
           UnicodeSPrint (Buffer, sizeof (Buffer), L"%s", BdsLibGetStringById (STRING_TOKEN (STR_DESCRIPTION_MISC)));
         }
+        DEBUG ((DEBUG_INFO | DEBUG_LOAD, "Misc Buffer: %S\n", Buffer));
         BdsLibBuildOptionFromHandle (BlockIoHandles[Index], BdsBootOptionList, Buffer);
         MiscNumber++;
         break;
@@ -3321,7 +3328,9 @@ BdsLibEnumerateAllBootOption (
         &NumberFileSystemHandles,
         &FileSystemHandles
         );
+  DEBUG ((DEBUG_INFO | DEBUG_LOAD, "BdsLibEnumerateAllBootOption: Found %d Simple File System Handles.\n", (UINT32)NumberFileSystemHandles));
   for (Index = 0; Index < NumberFileSystemHandles; Index++) {
+      DEBUG ((DEBUG_INFO | DEBUG_LOAD, "BdsLibEnumerateAllBootOption: Simple File System Handle %d.\n", (UINT32)Index));
     Status = gBS->HandleProtocol (
                     FileSystemHandles[Index],
                     &gEfiBlockIoProtocolGuid,
@@ -3331,6 +3340,7 @@ BdsLibEnumerateAllBootOption (
       //
       //  Skip if the file system handle supports a BlkIo protocol,
       //
+      DEBUG ((DEBUG_INFO | DEBUG_LOAD, "BdsLibEnumerateAllBootOption: Simple File System supports BlockIo protocol Continuing.\n"));
       continue;
     }
 
@@ -3363,6 +3373,7 @@ BdsLibEnumerateAllBootOption (
       } else {
         UnicodeSPrint (Buffer, sizeof (Buffer), L"%s", BdsLibGetStringById (STRING_TOKEN (STR_DESCRIPTION_NON_BLOCK)));
       }
+      DEBUG ((DEBUG_INFO | DEBUG_LOAD, "Simple file system Buffer: %S\n", Buffer));
       BdsLibBuildOptionFromHandle (FileSystemHandles[Index], BdsBootOptionList, Buffer);
       NonBlockNumber++;
     }
@@ -3393,6 +3404,7 @@ BdsLibEnumerateAllBootOption (
     } else {
       UnicodeSPrint (Buffer, sizeof (Buffer), L"%s", BdsLibGetStringById (STRING_TOKEN (STR_DESCRIPTION_NETWORK)));
     }
+    DEBUG ((DEBUG_INFO | DEBUG_LOAD, "Load file Buffer: %S\n", Buffer));
     BdsLibBuildOptionFromHandle (LoadFileHandles[Index], BdsBootOptionList, Buffer);
   }
 
@@ -3635,14 +3647,18 @@ BdsLibGetBootableHandle (
       //
       UpdatedDevicePath = DevicePath;
       Status            = gBS->LocateDevicePath (&gEfiDevicePathProtocolGuid, &UpdatedDevicePath, &Handle);
+      DEBUG ((EFI_D_ERROR, "BdsBoot calls ConnectController I BEGIN\n"));
       gBS->ConnectController (Handle, NULL, NULL, TRUE);
+      DEBUG ((EFI_D_ERROR, "BdsBoot calls ConnectController I END\n"));
     }
   } else {
     //
     // For removable device boot option, its contained device path only point to the removable device handle, 
     // should make sure all its children handles (its child partion or media handles) are created and connected. 
     //
+      DEBUG ((EFI_D_ERROR, "BdsBoot calls ConnectController II BEGIN\n"));
     gBS->ConnectController (Handle, NULL, NULL, TRUE); 
+      DEBUG ((EFI_D_ERROR, "BdsBoot calls ConnectController II END\n"));
     //
     // Get BlockIo protocol and check removable attribute
     //
@@ -3709,6 +3725,7 @@ BdsLibGetBootableHandle (
       &NumberSimpleFileSystemHandles,
       &SimpleFileSystemHandles
       );
+  DEBUG ((EFI_D_ERROR, "BdsBoot: NumberSimpleFileSystemHandles = %d\n", (UINT32)NumberSimpleFileSystemHandles));
   for (Index = 0; Index < NumberSimpleFileSystemHandles; Index++) {
     //
     // Get the device path size of SimpleFileSystem handle
@@ -3730,12 +3747,22 @@ BdsLibGetBootableHandle (
                  &DosHeader,
                  Hdr
                  );
+      DEBUG ((EFI_D_ERROR, "BdsBoot: Index %d: BdsLibGetImageHeader returns %d\n", (UINT32)Index, (UINT32)Status));
       if (!EFI_ERROR (Status) &&
         EFI_IMAGE_MACHINE_TYPE_SUPPORTED (Hdr.Pe32->FileHeader.Machine) &&
         Hdr.Pe32->OptionalHeader.Subsystem == EFI_IMAGE_SUBSYSTEM_EFI_APPLICATION) {
+          DEBUG ((EFI_D_ERROR, "BdsBoot: Index %d: ReturnHandle found 0x%lx\n", (UINT32)Index, (UINTN)ReturnHandle));
         ReturnHandle = SimpleFileSystemHandles[Index];
         break;
+      } else {
+          DEBUG ((EFI_D_ERROR, "BdsBoot: Index %d: Not supported\n", (UINT32)Index));
       }
+    } else {
+        if (Size > TempSize) {
+            DEBUG ((EFI_D_ERROR, "BdsBoot: Index %d: wrong path size %d > %d\n", (UINT32)Index, (UINT32)Size, (UINT32)TempSize));
+        } else {
+            DEBUG ((EFI_D_ERROR, "BdsBoot: Index %d: CompareMem error\n", (UINT32)Index));
+        }
     }
   }
 

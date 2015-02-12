@@ -747,13 +747,16 @@ CoreConvertPages (
       RangeEnd = Entry->End;
     }
 
-    DEBUG ((DEBUG_PAGE, "ConvertRange: %lx-%lx to %d\n", Start, RangeEnd, NewType));
+    DEBUG ((DEBUG_PAGE/* | EFI_D_INFO*/, "ConvertRange: %lx-%lx to %d\n", Start, RangeEnd, NewType));
 
     //
     // Debug code - verify conversion is allowed
     //
     if (!(NewType == EfiConventionalMemory ? 1 : 0) ^ (Entry->Type == EfiConventionalMemory ? 1 : 0)) {
-      DEBUG ((DEBUG_ERROR | DEBUG_PAGE, "ConvertPages: Incompatible memory types\n"));
+      DEBUG ((DEBUG_ERROR | DEBUG_PAGE,
+              "ConvertPages: Incompatible memory types: NewType is %d (%S) while Entry->Type is %d (%S).\n",
+              NewType, NewType == EfiConventionalMemory ? L"conventional" : L"non-conventional",
+              Entry->Type, Entry->Type == EfiConventionalMemory ? L"conventional" : L"non-conventional"));
       return EFI_NOT_FOUND;
     }
 

@@ -1178,6 +1178,8 @@ BdsLibGetImageHeader (
   UINT64                           FileSize;
   EFI_FILE_INFO                    *Info;
 
+  DEBUG ((EFI_D_ERROR, "BdsLibGetImageHeader\n"));
+
   Root     = NULL;
   ThisFile = NULL;
   //
@@ -1189,6 +1191,8 @@ BdsLibGetImageHeader (
                   (VOID *) &Volume
                   );
   if (EFI_ERROR (Status)) {
+      DEBUG ((EFI_D_ERROR, "BdsLibGetImageHeader: HandleProtocol gEfiSimpleFileSystemProtocolGuid returned error\n"));
+      DEBUG ((EFI_D_ERROR, "BdsLibGetImageHeader returns %d\n", (UINT32)Status));
     goto Done;
   }
 
@@ -1198,11 +1202,15 @@ BdsLibGetImageHeader (
                      );
   if (EFI_ERROR (Status)) {
     Root = NULL;
+    DEBUG ((EFI_D_ERROR, "BdsLibGetImageHeader: OpenVolume returned error\n"));
+    DEBUG ((EFI_D_ERROR, "BdsLibGetImageHeader returns %d\n", (UINT32)Status));
     goto Done;
   }
   ASSERT (Root != NULL);
   Status = Root->Open (Root, &ThisFile, FileName, EFI_FILE_MODE_READ, 0);
   if (EFI_ERROR (Status)) {
+    DEBUG ((EFI_D_ERROR, "BdsLibGetImageHeader: Root->Open returned error\n"));
+    DEBUG ((EFI_D_ERROR, "BdsLibGetImageHeader returns %d\n", (UINT32)Status));
     goto Done;
   }
   ASSERT (ThisFile != NULL);
@@ -1215,6 +1223,8 @@ BdsLibGetImageHeader (
     Info   = NULL;
     Status = gBS->AllocatePool (EfiBootServicesData, BufferSize, (VOID **) &Info);
     if (EFI_ERROR (Status)) {
+        DEBUG ((EFI_D_ERROR, "BdsLibGetImageHeader: AllocatePool returned error\n"));
+        DEBUG ((EFI_D_ERROR, "BdsLibGetImageHeader returns %d\n", (UINT32)Status));
       goto Done;
     }
     Status = ThisFile->GetInfo (
@@ -1228,6 +1238,8 @@ BdsLibGetImageHeader (
     }
     if (Status != EFI_BUFFER_TOO_SMALL) {
       FreePool (Info);
+      DEBUG ((EFI_D_ERROR, "BdsLibGetImageHeader: ThisFile->GetInfo returned error\n"));
+      DEBUG ((EFI_D_ERROR, "BdsLibGetImageHeader returns %d\n", (UINT32)Status));
       goto Done;
     }
     FreePool (Info);
@@ -1245,6 +1257,8 @@ BdsLibGetImageHeader (
       BufferSize < sizeof (EFI_IMAGE_DOS_HEADER) ||
       FileSize <= DosHeader->e_lfanew ||
       DosHeader->e_magic != EFI_IMAGE_DOS_SIGNATURE) {
+      DEBUG ((EFI_D_ERROR, "BdsLibGetImageHeader: ThisFile->Read returned error %d\n", (UINT32)Status));
+      DEBUG ((EFI_D_ERROR, "BdsLibGetImageHeader returns %d\n", (UINT32)EFI_LOAD_ERROR));
     Status = EFI_LOAD_ERROR;
     goto Done;
   }
@@ -1255,6 +1269,8 @@ BdsLibGetImageHeader (
   Status = ThisFile->SetPosition (ThisFile, DosHeader->e_lfanew);
   if (EFI_ERROR (Status)) {
     Status = EFI_LOAD_ERROR;
+      DEBUG ((EFI_D_ERROR, "BdsLibGetImageHeader: ThisFile->SetPosition returned error %d\n", (UINT32)Status));
+      DEBUG ((EFI_D_ERROR, "BdsLibGetImageHeader returns %d\n", (UINT32)EFI_LOAD_ERROR));
     goto Done;
   }
 
@@ -1267,6 +1283,8 @@ BdsLibGetImageHeader (
       BufferSize < sizeof (EFI_IMAGE_OPTIONAL_HEADER_UNION) ||
       Hdr.Pe32->Signature != EFI_IMAGE_NT_SIGNATURE) {
     Status = EFI_LOAD_ERROR;
+      DEBUG ((EFI_D_ERROR, "BdsLibGetImageHeader: Second ThisFile->Read returned error %d\n", (UINT32)Status));
+      DEBUG ((EFI_D_ERROR, "BdsLibGetImageHeader returns %d\n", (UINT32)EFI_LOAD_ERROR));
     goto Done;
   }
 
@@ -1276,6 +1294,8 @@ BdsLibGetImageHeader (
   if (Hdr.Pe32->OptionalHeader.Magic != EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC &&
       Hdr.Pe32->OptionalHeader.Magic != EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
     Status = EFI_LOAD_ERROR;
+    DEBUG ((EFI_D_ERROR, "BdsLibGetImageHeader: wrong magic\n"));
+      DEBUG ((EFI_D_ERROR, "BdsLibGetImageHeader returns %d\n", (UINT32)EFI_LOAD_ERROR));
     goto Done;
   }
 

@@ -141,6 +141,9 @@ CoreConnectController (
                      );
   } while (ReturnStatus == EFI_NOT_READY);
 
+  DEBUG ((EFI_D_ERROR, "CoreConnectController: CoreConnectSingleController returned %d.\n",
+          ReturnStatus));
+
   //
   // Free the aligned copy of RemainingDevicePath
   //
@@ -167,6 +170,10 @@ CoreConnectController (
       //
       CoreReleaseProtocolLock ();
 
+      DEBUG ((EFI_D_ERROR, "CoreConnectController: CoreValidateHandle error %d.\n",
+              Status));
+      DEBUG ((EFI_D_ERROR, "CoreConnectController returns %d.\n",
+              ReturnStatus));
       return ReturnStatus;
     }
 
@@ -192,6 +199,8 @@ CoreConnectController (
     ChildHandleBuffer = AllocatePool (ChildHandleCount * sizeof(EFI_HANDLE));
     if (ChildHandleBuffer == NULL) {
       CoreReleaseProtocolLock ();
+      DEBUG ((EFI_D_ERROR, "CoreConnectController returns %d.\n",
+              EFI_OUT_OF_RESOURCES));
       return EFI_OUT_OF_RESOURCES;
     }
 
@@ -220,12 +229,14 @@ CoreConnectController (
     // Recursively connect each child handle
     //
     for (Index = 0; Index < ChildHandleCount; Index++) {
+        DEBUG ((EFI_D_ERROR, "CoreConnectController Recursive call BEGIN.\n"));
       CoreConnectController (
         ChildHandleBuffer[Index],
         NULL,
         NULL,
         TRUE
         );
+      DEBUG ((EFI_D_ERROR, "CoreConnectController Recursive call END.\n"));
     }
 
     //
@@ -234,6 +245,8 @@ CoreConnectController (
     CoreFreePool (ChildHandleBuffer);
   }
 
+  DEBUG ((EFI_D_ERROR, "CoreConnectController returns %d.\n",
+          ReturnStatus));
   return ReturnStatus;
 }
 
@@ -409,6 +422,8 @@ CoreConnectSingleController (
   BOOLEAN                                    OneStarted;
   BOOLEAN                                    DriverFound;
 
+  DEBUG ((EFI_D_ERROR, "CoreConnectSingleController\n"));
+
   //
   // Initialize local variables
   //
@@ -430,6 +445,8 @@ CoreConnectSingleController (
              &DriverBindingHandleBuffer
              );
   if (EFI_ERROR (Status) || (DriverBindingHandleCount == 0)) {
+      DEBUG ((EFI_D_ERROR, "No Driver Binding Protocol Instances.\n"));
+      DEBUG ((EFI_D_ERROR, "CoreConnectSingleController returns EFI_NOT_FOUND.\n"));
     return EFI_NOT_FOUND;
   }
 
@@ -588,6 +605,8 @@ CoreConnectSingleController (
     //
     CoreFreePool (SortedDriverBindingProtocols);
 
+    DEBUG ((EFI_D_ERROR, "Driver Binding Protocols Added: restart needed.\n"));
+    DEBUG ((EFI_D_ERROR, "CoreConnectSingleController returns EFI_NOT_READY.\n"));
     return EFI_NOT_READY;
   }
 
@@ -643,7 +662,7 @@ CoreConnectSingleController (
           // on ControllerHandle.
           //
           PERF_START (DriverBinding->DriverBindingHandle, "DB:Start:", NULL, 0);
-          Status = DriverBinding->Start (
+          Status = DriverBinding->StartXXX (
                                     DriverBinding,
                                     ControllerHandle,
                                     RemainingDevicePath
@@ -654,6 +673,7 @@ CoreConnectSingleController (
             //
             // The driver was successfully started on ControllerHandle, so set a flag
             //
+              DEBUG ((EFI_D_ERROR, "Driver Binding Successfully started.\n"));
             OneStarted = TRUE;
           }
         }
@@ -670,6 +690,7 @@ CoreConnectSingleController (
   // If at least one driver was started on ControllerHandle, then return EFI_SUCCESS.
   //
   if (OneStarted) {
+      DEBUG ((EFI_D_ERROR, "CoreConnectSingleController returns EFI_SUCCESS.\n"));
     return EFI_SUCCESS;
   }
 
@@ -678,6 +699,8 @@ CoreConnectSingleController (
   //
   if (RemainingDevicePath != NULL) {
     if (IsDevicePathEnd (RemainingDevicePath)) {
+      DEBUG ((EFI_D_ERROR, "End Device Path Node.\n"));
+      DEBUG ((EFI_D_ERROR, "CoreConnectSingleController returns EFI_SUCCESS.\n"));
       return EFI_SUCCESS;
     }
   }
@@ -685,6 +708,7 @@ CoreConnectSingleController (
   //
   // Otherwise, no drivers were started on ControllerHandle, so return EFI_NOT_FOUND
   //
+  DEBUG ((EFI_D_ERROR, "CoreConnectSingleController returns EFI_NOT_FOUND.\n"));
   return EFI_NOT_FOUND;
 }
 

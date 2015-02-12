@@ -2272,10 +2272,11 @@ BackOff:
   }
 
   if ((TargetStatus == EFI_EXT_SCSI_STATUS_TARGET_CHECK_CONDITION) || (EFI_ERROR (ReturnStatus))) {
-    DEBUG ((EFI_D_ERROR, "ScsiDiskWrite10: Check Condition happened!\n"));
+      DEBUG ((EFI_D_ERROR, "ScsiDiskWrite10: Check Condition happened TargetStatus=%d ReturnStatus=0x%x!\n", TargetStatus, (UINT32)ReturnStatus));
     Status = DetectMediaParsingSenseKeys (ScsiDiskDevice, ScsiDiskDevice->SenseData, SenseDataLength / sizeof (EFI_SCSI_SENSE_DATA), &Action);
     if (Action == ACTION_RETRY_COMMAND_LATER) {
       *NeedRetry = TRUE;
+      DEBUG ((EFI_D_ERROR, "ScsiDiskWrite10: EFI_DEVICE_ERROR (ACTION_RETRY_COMMAND_LATER)!\n"));
       return EFI_DEVICE_ERROR;
     } else if (Action == ACTION_RETRY_WITH_BACKOFF_ALGO) {
       if (SectorCount <= 1) {
@@ -2283,6 +2284,7 @@ BackOff:
         // Jump out if the operation still fails with one sector transfer length.
         //
         *NeedRetry = FALSE;
+        DEBUG ((EFI_D_ERROR, "ScsiDiskWrite10: EFI_DEVICE_ERROR (ACTION_RETRY_WITH_BACKOFF_ALGO but SectorCount %d)!\n", SectorCount));
         return EFI_DEVICE_ERROR;
       }
       //
@@ -2290,9 +2292,11 @@ BackOff:
       //
       SectorCount >>= 1;
       *DataLength = SectorCount * ScsiDiskDevice->BlkIo.Media->BlockSize;
+      DEBUG ((EFI_D_ERROR, "ScsiDiskWrite10: Trying again!\n"));
       goto BackOff;
     } else {
       *NeedRetry = FALSE;
+      DEBUG ((EFI_D_ERROR, "ScsiDiskWrite10: EFI_DEVICE_ERROR (Action %d)!\n", Action));
       return EFI_DEVICE_ERROR;
     }
   }

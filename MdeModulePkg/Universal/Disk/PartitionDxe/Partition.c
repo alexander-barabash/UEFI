@@ -203,6 +203,8 @@ PartitionDriverBindingStart (
   BOOLEAN                   MediaPresent;
   EFI_TPL                   OldTpl;
 
+  DEBUG ((EFI_D_ERROR, " ---------------- PartitionDriverBindingStart -----------\n"));
+
   BlockIo2 = NULL;
   OldTpl = gBS->RaiseTPL (TPL_CALLBACK); 
   //
@@ -304,6 +306,7 @@ PartitionDriverBindingStart (
   MediaPresent = BlockIo->Media->MediaPresent;
   if (BlockIo->Media->MediaPresent ||
       (BlockIo->Media->RemovableMedia && !BlockIo->Media->LogicalPartition)) {
+      UINT32 RoutineIndex = 0;
     //
     // Try for GPT, then El Torito, and then legacy MBR partition types. If the
     // media supports a given partition type install child handles to represent
@@ -311,6 +314,7 @@ PartitionDriverBindingStart (
     //
     Routine = &mPartitionDetectRoutineTable[0];
     while (*Routine != NULL) {
+        DEBUG ((EFI_D_ERROR, "Trying Routine %d\n", RoutineIndex++));
       Status = (*Routine) (
                    This,
                    ControllerHandle,
@@ -321,8 +325,10 @@ PartitionDriverBindingStart (
                    ParentDevicePath
                    );
       if (!EFI_ERROR (Status) || Status == EFI_MEDIA_CHANGED || Status == EFI_NO_MEDIA) {
+          DEBUG ((EFI_D_ERROR, "Breaking with Status %d\n", (UINT32)Status));
         break;
       }
+      DEBUG ((EFI_D_ERROR, "Continuing with Status %d\n", (UINT32)Status));
       Routine++;
     }
   }
@@ -368,6 +374,7 @@ PartitionDriverBindingStart (
 
 Exit:
   gBS->RestoreTPL (OldTpl);
+  DEBUG ((EFI_D_ERROR, " ---------------- PartitionDriverBindingStart returns %d\n", (UINT32)Status));
   return Status;
 }
 
@@ -1080,6 +1087,8 @@ PartitionInstallChildHandle (
   EFI_STATUS              Status;
   PARTITION_PRIVATE_DATA  *Private;
 
+  DEBUG ((EFI_D_ERROR, "PartitionInstallChildHandle\n"));
+
   Status  = EFI_SUCCESS;
   Private = AllocateZeroPool (sizeof (PARTITION_PRIVATE_DATA));
   if (Private == NULL) {
@@ -1219,6 +1228,7 @@ PartitionInstallChildHandle (
     FreePool (Private);
   }
 
+  DEBUG ((EFI_D_ERROR, "PartitionInstallChildHandle returns 0x%x\n", (UINT32)Status));
   return Status;
 }
 

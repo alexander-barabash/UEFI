@@ -194,6 +194,8 @@ IterateVariablesInBuffer (
 
     TotalSizeUsed = TotalSizeUsed + SizeUsed;
 
+    DEBUG ((EFI_D_ERROR, "Unpacked Variable %S\n", AlignedName));
+
     //
     // Run the callback function
     //

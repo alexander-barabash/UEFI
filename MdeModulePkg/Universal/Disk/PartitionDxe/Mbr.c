@@ -139,6 +139,7 @@ PartitionInstallMbrChildHandles (
   UINT32                    MediaId;
   EFI_LBA                   LastBlock;
 
+  DEBUG ((EFI_D_ERROR, " ============== PartitionInstallMbrChildHandles ===============\n"));
   Found           = EFI_NOT_FOUND;
 
   BlockSize = BlockIo->Media->BlockSize;
@@ -159,9 +160,11 @@ PartitionInstallMbrChildHandles (
                      );
   if (EFI_ERROR (Status)) {
     Found = Status;
+    DEBUG ((EFI_D_ERROR, " ============== PartitionInstallMbrChildHandles ReadDisk error\n"));
     goto Done;
   }
   if (!PartitionValidMbr (Mbr, LastBlock)) {
+    DEBUG ((EFI_D_ERROR, " ============== PartitionInstallMbrChildHandles Invalid MBR\n"));
     goto Done;
   }
   //
@@ -261,6 +264,7 @@ PartitionInstallMbrChildHandles (
                          );
       if (EFI_ERROR (Status)) {
         Found = Status;
+        DEBUG ((EFI_D_ERROR, " ============== PartitionInstallMbrChildHandles ReadDisk failed\n"));
         goto Done;
       }
 
@@ -323,5 +327,7 @@ PartitionInstallMbrChildHandles (
 Done:
   FreePool (Mbr);
 
+  DEBUG ((EFI_D_ERROR, " ============== PartitionInstallMbrChildHandles returns %d\n",
+          (UINT32)Found));
   return Found;
 }
